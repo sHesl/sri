@@ -6,9 +6,9 @@ SRI is a CLI tool for generating Sub-Resource Integrity digests for Javascript f
 
 ## Usage
 
-`sri .` to generate SRI digests for all files in current directory
-`sri jquery-3.3.1.min.js` to generate SRI digests for a single, local file
-`sri https://code.jquery.com/jquery-3.3.1.min.js` to generate SRI digests for a single, hosted file
+`sri .` to generate SRI digests for all files in current directory .   
+`sri jquery-3.3.1.min.js` to generate SRI digests for a single, local file .   
+`sri https://code.jquery.com/jquery-3.3.1.min.js` to generate SRI digests for a single, hosted file .   
 
 
 ## Example Output
