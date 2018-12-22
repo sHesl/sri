@@ -11,6 +11,11 @@ SRI is a CLI tool for generating Sub-Resource Integrity digests for Javascript f
 `sri https://code.jquery.com/jquery-3.3.1.min.js` to generate SRI digests for a single, hosted file .   
 
 
+## Flags
+`-out` - File path to write the outputs to. Default behaviour prints to stdout - e.g `sri -out=sri.json .`     
+`-compare` - Compare the digests of two targets - e.g `sri -compare jquery.min https://cdn.com/jquery-3.3.1.min.js`     
+`-hash` - Specify the algorithm to be use. Valid: sha256 (default) , sha384, sha512, all. - e.g `sri -hash=sha256 .`
+
 ## Example Output
 SRI produces a JSON file with digests for sha256/384/512, as well as the relevant script tag with integrity attribute.  
 ```
