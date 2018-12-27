@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/url"
 	"path"
+	"sort"
 )
 
 type fileIntegrity struct {
@@ -17,6 +18,10 @@ type fileIntegrity struct {
 	Tag      string `json:"tag"`
 	Source   string `json:"source,omitempty"`
 }
+
+type integrities []fileIntegrity
+
+var _ sort.Interface = (integrities)(nil)
 
 func generateFileIntegrities(source, hashAlgo string, r io.Reader) ([]fileIntegrity, error) {
 	var hs []io.Writer
@@ -68,3 +73,7 @@ func generateTag(source, digest string) string {
 
 	return fmt.Sprintf(`<script src='%s' integrity='%s'></script>`, source, digest)
 }
+
+func (is integrities) Len() int           { return len(is) }
+func (is integrities) Swap(i, j int)      { is[i], is[j] = is[j], is[i] }
+func (is integrities) Less(i, j int) bool { return is[i].FileName < is[j].FileName }

@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"time"
 )
 
@@ -32,6 +33,7 @@ var (
 		sha256Algo: func() hash.Hash { return sha256.New() },
 		sha384Algo: func() hash.Hash { return sha512.New384() },
 		sha512Algo: func() hash.Hash { return sha512.New() },
+		allHashes:  func() hash.Hash { return nil },
 	}
 
 	client = &http.Client{Timeout: time.Second * 2}
@@ -74,7 +76,7 @@ func main() {
 		log.Fatalf("[sri] Unable to generate SRI output. %q", err)
 	}
 
-	fis, err := generate(flag.Arg(0), *hashAlgo)
+	fis, err := generate(flag.Args(), *hashAlgo)
 	if err != nil {
 		log.Fatalf("[sri] An error occured to generating SRI output. %q", err)
 	}
@@ -94,26 +96,41 @@ func main() {
 	os.Exit(0)
 }
 
-func generate(target, hashName string) ([]fileIntegrity, error) {
-	var fileIntegrities []fileIntegrity
-	var err error
-	if _, err := url.ParseRequestURI(target); err == nil {
-		fileIntegrities, err = handleDownload(target, hashName)
-	} else if fi, err := os.Stat(target); err == nil && fi != nil && fi.Size() > 0 && fi.Mode().IsRegular() {
-		fileIntegrities, err = handleFile(target, hashName)
-	} else {
-		fileIntegrities, err = handleDir(target, hashName)
+func generate(targets []string, hashName string) ([]fileIntegrity, error) {
+	var outerErr error
+	fisChan := make(chan []fileIntegrity, len(targets))
+
+	for _, target := range targets {
+		go func(target string) {
+			var fis []fileIntegrity
+			if _, err := url.ParseRequestURI(target); err == nil {
+				fis, outerErr = handleDownload(target, hashName)
+			} else if fi, err := os.Stat(target); err == nil && fi != nil && fi.Size() > 0 && fi.Mode().IsRegular() {
+				fis, outerErr = handleFile(target, hashName)
+			} else {
+				fis, outerErr = handleDir(target, hashName)
+			}
+
+			fisChan <- fis
+		}(target)
 	}
 
-	if err != nil {
-		return nil, err
+	if outerErr != nil {
+		return nil, outerErr
 	}
 
-	if fileIntegrities == nil || len(fileIntegrities) == 0 {
-		return nil, fmt.Errorf("No file integrities generated from target '%s'", target)
+	combined := integrities{}
+	for i := 0; i < len(targets); i++ {
+		combined = append(combined, <-fisChan...)
 	}
 
-	return fileIntegrities, nil
+	if combined == nil || len(combined) == 0 {
+		return nil, fmt.Errorf("No file integrities generated from targets '%q'", targets)
+	}
+
+	sort.Sort(combined)
+
+	return combined, nil
 }
 
 func handleDownload(target, hashName string) ([]fileIntegrity, error) {
@@ -155,7 +172,7 @@ func handleDir(target, hashName string) ([]fileIntegrity, error) {
 	}
 
 	if outerErr != nil {
-		return nil, err
+		return nil, outerErr
 	}
 
 	combined := []fileIntegrity{}
@@ -169,15 +186,15 @@ func handleDir(target, hashName string) ([]fileIntegrity, error) {
 func validateHash(hashName string) error {
 	v, ok := hashes[hashName]
 	if !ok || v == nil {
-		return fmt.Errorf("Invalid hashing algorithm '%s'. Expected one of 'sha256', 'sha384' or 'sha512'", hashName)
+		return fmt.Errorf("Invalid hashing algorithm '%s'. Expected one of 'sha256', 'sha384', 'sha512' or 'all'", hashName)
 	}
 
 	return nil
 }
 
 func validateGenerate(args []string) error {
-	if len(args) != 1 {
-		return fmt.Errorf("Expected only a single target for SRI generation, received %d", len(args))
+	if len(args) == 0 {
+		return fmt.Errorf("No target specified for SRI generation")
 	}
 
 	if args[0] == "" {

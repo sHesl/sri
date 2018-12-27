@@ -50,8 +50,8 @@ func TestCompareHandlesErrors(t *testing.T) {
 	}
 
 	testCases := []testCase{
-		{"test/not-real.js", "test/compare-same-b.js", "No file integrities generated from target 'test/not-real.js'"},
-		{"test/compare-same-a.js", "test/not-real.js", "No file integrities generated from target 'test/not-real.js'"},
+		{"test/not-real.js", "test/compare-same-b.js", "Unable to produce both integrities for [\"test/not-real.js\" \"test/compare-same-b.js\"]"},
+		{"test/compare-same-a.js", "test/not-real.js", "Unable to produce both integrities for [\"test/compare-same-a.js\" \"test/not-real.js\"]"},
 	}
 
 	for _, tc := range testCases {

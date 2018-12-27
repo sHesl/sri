@@ -14,13 +14,13 @@ func TestGenerate(t *testing.T) {
 	client = mockServer.Client()
 
 	type testCase struct {
-		target string
-		exp    map[string]map[string]string
+		targets []string
+		exp     map[string]map[string]string
 	}
 
 	testCases := []testCase{
 		{
-			target: mockServer.URL, // test file downloading
+			targets: []string{mockServer.URL}, // test file downloading
 			exp: map[string]map[string]string{
 				mockServer.URL: map[string]string{
 					"sha256": "sha256-lClGOfcWqtQdAvO3zCRzZEg/4RmOMbr9/V54QO76j/A=",
@@ -30,7 +30,7 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 		{
-			target: "test/test.js", // test single file
+			targets: []string{"test/test.js"}, // test single file
 			exp: map[string]map[string]string{
 				"test.js": map[string]string{
 					"sha256": "sha256-jEUM4jWrIiMerWo9zYrx6XwQ5eI77uzuETBptBvPlRQ=",
@@ -40,7 +40,22 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 		{
-			target: "./test", // test directory
+			targets: []string{"test/test.js", "test/test.min.js"}, // test two files
+			exp: map[string]map[string]string{
+				"test.js": map[string]string{
+					"sha256": "sha256-jEUM4jWrIiMerWo9zYrx6XwQ5eI77uzuETBptBvPlRQ=",
+					"sha384": "sha384-zBTHeP/UZLYRhjvTi7r3Dx7MTCNf/ddGENI26AacmrgqzH8YOkA+EJ14MXpwD4wL",
+					"sha512": "sha512-RmToDhq62z0wvdoBN8yl5SfjLtbF84USifqZuJNyJ1K99b27Jo/BE16veNzzvTHVBY8NWvvD2M0Vc1NDJWf2Yw==",
+				},
+				"test.min.js": map[string]string{
+					"sha256": "sha256-ODBnPrz8p2bs/l/ffyD4jUqpRkTvzlmFu8WDCuYNYms=",
+					"sha384": "sha384-GFSKzS/+oGDIT70dABnjqACvEFXH8kCG4tW9e3athjSbADyCkj3Mlfk1a2mmtAWa",
+					"sha512": "sha512-KNFlyFMpPl1IsSOPottAYfbxAj9RZsp1gOw4usysmMjszS2OPMTff7RU/7AB6V6PgImA1SZg1RAm8GF9Q5tvFg==",
+				},
+			},
+		},
+		{
+			targets: []string{"./test"}, // test directory
 			exp: map[string]map[string]string{
 				"test.js": map[string]string{
 					"sha256": "sha256-jEUM4jWrIiMerWo9zYrx6XwQ5eI77uzuETBptBvPlRQ=",
@@ -84,20 +99,20 @@ func TestGenerate(t *testing.T) {
 	for _, tc := range testCases {
 		// Test against each of our hash options
 		for _, h := range []string{sha256Algo, sha384Algo, sha512Algo, allHashes} {
-			fis, err := generate(tc.target, h)
+			fis, err := generate(tc.targets, h)
 			if err != nil {
-				t.Fatalf("Unexpected error from generate call (target: %s). %q", tc.target, err)
+				t.Fatalf("Unexpected error from generate call (targets: %q). %q", tc.targets, err)
 			}
 
 			for _, fi := range fis {
 				hash := fi.Digest[:6]
 
-				if tc.target == mockServer.URL && tc.exp[fi.Source][hash] != fi.Digest {
+				if tc.targets[0] == mockServer.URL && tc.exp[fi.Source][hash] != fi.Digest {
 					t.Fatalf("Expected integrity from %s to have %s digest of '%s'. Got '%s'",
 						fi.Source, hash, fi.Digest, tc.exp[fi.Source][hash])
 				}
 
-				if tc.target != mockServer.URL && tc.exp[fi.FileName][hash] != fi.Digest {
+				if tc.targets[0] != mockServer.URL && tc.exp[fi.FileName][hash] != fi.Digest {
 					t.Fatalf("Expected integrity from %s to have %s digest of '%s'. Got '%s'",
 						fi.FileName, hash, fi.Digest, tc.exp[fi.FileName][hash])
 				}

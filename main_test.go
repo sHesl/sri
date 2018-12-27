@@ -15,7 +15,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestValidateHash(t *testing.T) {
-	for _, h := range []string{sha256Algo, sha384Algo, sha512Algo} {
+	for _, h := range []string{sha256Algo, sha384Algo, sha512Algo, allHashes} {
 		if err := validateHash(h); err != nil {
 			t.Fatalf("Expected %s to be a valid hash value", h)
 		}
@@ -34,16 +34,16 @@ func TestValidateGenerate(t *testing.T) {
 
 	testCases := []testCase{
 		{
+			inputs: []string{},
+			errMsg: "No target specified for SRI generation",
+		},
+		{
 			inputs: []string{""},
 			errMsg: "Received an empty target for SRI generation",
 		},
 		{
 			inputs: []string{"one input"},
 			errMsg: "",
-		},
-		{
-			inputs: []string{"two inputs", "two inputs"},
-			errMsg: "Expected only a single target for SRI generation, received 2",
 		},
 	}
 

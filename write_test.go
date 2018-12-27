@@ -8,7 +8,7 @@ import (
 )
 
 func TestWriteOutputToFile(t *testing.T) {
-	fis, err := generate("./test", allHashes)
+	fis, err := generate([]string{"./test"}, allHashes)
 	if err != nil {
 		t.Fatalf("Unexpected error from generate call (target: './test'). %q", err)
 	}
